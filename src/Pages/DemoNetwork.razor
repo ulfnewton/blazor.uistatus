@@ -1,0 +1,70 @@
+
+@page "/demonetwork"
+@inject DemoBlazorServerNetwork.Services.IUiStatus Ui
+
+<h3 class="mb-4">Blazor Server – nätverk & UI-svar</h3>
+
+<div class="stack">
+    <section class="card">
+        <h4>Scen 1: Fördröjning</h4>
+        <p>Klicket tar en liten stund → visa Busy direkt.</p>
+        <button class="btn primary" @onclick="SimulateLatency">Simulera 1,2 s svarstid</button>
+    </section>
+
+    <section class="card">
+        <h4>Scen 2: Timeout / Fel</h4>
+        <p>Åtgärd misslyckas → visa Error med kort och konsekvent text.</p>
+        <button class="btn danger" @onclick="SimulateError">Simulera fel vid åtgärd</button>
+    </section>
+
+    <section class="card">
+        <h4>Scen 3: Kortare avbrott</h4>
+        <p>Länken tappar i en stund → visa “Återansluter …” som banner.</p>
+        <div class="row">
+            <button class="btn" @onclick="ToggleOffline">@(Ui.IsOffline ? "Dölj Återansluter" : "Visa Återansluter")</button>
+            <button class="btn" @onclick="PulseOffline">Puls (2 s)</button>
+        </div>
+    </section>
+</div>
+
+@code {
+    private async Task SimulateLatency()
+    {
+        Ui.Busy(true);
+        try
+        {
+            await Task.Delay(1200); // simulera tur-och-retur
+        }
+        finally
+        {
+            Ui.Busy(false);
+        }
+    }
+
+    private async Task SimulateError()
+    {
+        Ui.Busy(true);
+        try
+        {
+            await Task.Delay(600);
+            throw new InvalidOperationException("Åtgärden kunde inte slutföras.");
+        }
+        catch (Exception ex)
+        {
+            Ui.SetError(new DemoBlazorServerNetwork.Services.UiError("Något gick fel", ex.Message));
+        }
+        finally
+        {
+            Ui.Busy(false);
+        }
+    }
+
+    private void ToggleOffline() => Ui.Offline(!Ui.IsOffline);
+
+    private async Task PulseOffline()
+    {
+        Ui.Offline(true);
+        await Task.Delay(2000);
+        Ui.Offline(false);
+    }
+}
