@@ -40,13 +40,40 @@
 }
 
 @code {
+    private System.Threading.Timer? _errorTimer;
+
     protected override void OnInitialized()
     {
-        Ui.Changed += StateHasChanged;
+        Ui.Changed += OnUiChanged;
+    }
+
+    private void OnUiChanged()
+    {
+        if (Ui.Error is not null)
+        {
+            _errorTimer?.Dispose();
+            _errorTimer = new System.Threading.Timer(_ =>
+            {
+                InvokeAsync(() =>
+                {
+                    Ui.SetError(null);
+                    StateHasChanged();
+                });
+            }, null, TimeSpan.FromSeconds(5), Timeout.InfiniteTimeSpan);
+        }
+        else
+        {
+            // Rensa timer om felet stängs manuellt
+            _errorTimer?.Dispose();
+            _errorTimer = null;
+        }
+
+        StateHasChanged();
     }
 
     public void Dispose()
     {
-        Ui.Changed -= StateHasChanged;
+        Ui.Changed -= OnUiChanged;
+        _errorTimer?.Dispose();
     }
 }
